@@ -1,17 +1,20 @@
 <?php
-    $x = $_POST['x'] ?? 1;
-    $y = $_POST['y'] ?? 1;
-    $symbol = $_POST['symbol'] ?? '+';
+    require_once 'ComplexNumber.php';
+
+    function calc(ComplexNumber $x, ComplexNumber $y, string $symbol): ComplexNumber {
+        if ($symbol == '+') return $x->add($y);
+        else if ($symbol == '-') return $x->subtract($y);
+        else if ($symbol == '*') return $x->multiply($y);
+        else return new ComplexNumber('1', '1');
+    }
     
-    function calc($x, $y, $symbol) {
-        if ($symbol == '+') return $x + $y;
-        else if ($symbol == '-') return $x - $y;
-        else if ($symbol == '*') return $x * $y;
-        else return '0';
+    function parseComplexNumber(string $str): array {
+        $str = str_replace('i', '', $str);
+        $arr = explode('+', $str);
+        return $arr;
     }
 
-    function createHistoryForm($x, $y, $symbol) {
-        $result = calc($x, $y, $symbol);
+    function createHistoryForm(ComplexNumber $x, ComplexNumber $y, string $symbol, string $result): string {
         return
         "<form action=\"\" method=\"post\" class=\"history__form\">
             <input name=\"action\" value=\"without\" hidden>
@@ -23,6 +26,13 @@
             <button type=\"submit\" class=\"history__button\">↩️</button>
         </form>";
     }
+    
+    list($x1, $x2) = parseComplexNumber($_POST['x'] ?? '1+1i');
+    list($y1, $y2) = parseComplexNumber($_POST['y'] ?? '1+1i');
+    
+    $x = new ComplexNumber($x1, $x2);
+    $y = new ComplexNumber($y1, $y2);
+    $symbol = $_POST['symbol'] ?? '+';
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($_POST['action'] == 'calc') {
@@ -51,13 +61,13 @@
         <form action="" method="post" class="calc-form">
             <div class="calc-form__expression">
                 <input name="action" value="calc" hidden>
-                <input type="number" name="x" value="<?php echo $x; ?>" class="calc-form__input">
+                <input type="text" name="x" value="<?php echo $x; ?>" class="calc-form__input">
                 <select name="symbol" class="calc-form__select">
                     <option value="+" <?php if ($symbol == '+') echo 'selected'; ?>>+</option>
                     <option value="-" <?php if ($symbol == '-') echo 'selected'; ?>>-</option>
                     <option value="*" <?php if ($symbol == '*') echo 'selected'; ?>>*</option>
                 </select>
-                <input type="number" name="y" value="<?php echo $y; ?>" class="calc-form__input">
+                <input type="text" name="y" value="<?php echo $y; ?>" class="calc-form__input">
             </div>
             <button type="submit" class="calc-form__button">=</button>
             <p class="calc-form__value"><?php echo calc($x, $y, $symbol); ?></p>
@@ -68,7 +78,16 @@
                 foreach (array_reverse($_COOKIE) as $name => $value) {
                     if (str_starts_with($name, 'expression_') && $count < 5) {
                         $value = json_decode($value, true);
-                        echo createHistoryForm($value['x'], $value['y'], $value['symbol']);
+
+                        list($x1, $x2) = parseComplexNumber($value['x']);
+                        list($y1, $y2) = parseComplexNumber($value['y']);
+
+                        $x = new ComplexNumber($x1, $x2);
+                        $y = new ComplexNumber($y1, $y2);
+
+                        $result = calc($x, $y, $value['symbol']);
+
+                        echo createHistoryForm($x, $y, $value['symbol'], $result);
                         $count++;
                     }
                 }
